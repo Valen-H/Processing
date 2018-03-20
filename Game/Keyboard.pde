@@ -13,6 +13,7 @@ class Keyboard extends KeyboardS {
   boolean capital = false,
   submit = false,
   locked = false,
+  capOnce = false, //N
   blocked = false; //N
   float cooldown = CLICK_SENSITIVITY,
   last = millis();
@@ -114,6 +115,9 @@ class Keyboard extends KeyboardS {
       if ((millis() - last > cooldown || !locked) && mousePressed) {
         if ((alph == Alph.BASIC && !piece.special) || alph != Alph.BASIC) {
           typed += piece.chr();
+          if (capital && capOnce) {
+            capital = false;
+          }
         } else if (piece.chr().equalsIgnoreCase("Del")) {
           typed = join(shorten(splitAllS(typed)), "");
         } else if (piece.chr().equalsIgnoreCase("Cap") && !locked) {
@@ -274,15 +278,19 @@ class Keyboard extends KeyboardS {
     } //Piece(chr, x, y, dx, dy, keyboard)
     
     void draw() {
+      pushStyle();
       textAlign(CENTER, CENTER);
+      if (chr().equalsIgnoreCase("Cap") && keyboard.capital) {
+        fill(255, 0, 0);
+      }
       text(chr(), x, y, dx, dy);
+      popStyle();
     } //draw
     
     void drawR() {
       pushMatrix();
       resetMatrix();
-      textAlign(CENTER, CENTER);
-      text(chr(), x, y, dx, dy);
+      draw();
       popMatrix();
     } //drawR
     

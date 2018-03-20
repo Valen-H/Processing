@@ -9,6 +9,7 @@ final int SIZE = 50;
 final float UNIT = 50 / zoom, OFFSET = 10.0f;
 final int CLICK_SENSITIVITY = 400;
 volatile String screen = "Map";
+int inistep = 0;
 
 Canvas can;
 Map mp;
@@ -34,10 +35,8 @@ void setup() {
   keyb = new Keyboard(X / 2, Y / 2, X - OFFSET, Y / 3 + OFFSET, Keyboard.Alph.BASIC, 8, Keyboard.Mode.CENTERED, "");
   menu = new ClickRegion(0.0f, 0.0f, float(SIZE), float(SIZE));
   if (!new File("data.xml").exists()) {
-    //^fix
-    ini();
     save();
-  } else {
+    ini();
     load();
   }
   stroke(180);
@@ -48,7 +47,6 @@ void setup() {
   translate(X / 2, Y / 2);
   text("Loading...", 0, 0);
   popMatrix();
-  player.go();
   noFill();
 }
 
@@ -61,16 +59,16 @@ void tick() {
   clip(0, 0, X, Y);
   textAlign(CENTER, CENTER);
   background(200);
-  if (!screen.equalsIgnoreCase("Keyboard")) {
-    can.scroll();
-  }
   float[] coords = can.trns;
   coord[0] = mouseX - coords[0];
   coord[1] = mouseY - coords[1];
   if (screen.equalsIgnoreCase("Map")) {
+    can.scroll();
     mp.draw();
-  } else if (screen.equalsIgnoreCase("Keyboard")) {
-    keyb.runR("Input Text:");
+  } else if (screen.equalsIgnoreCase("Ini")) {
+    ini();
+  } else {
+    text("Coming soon...", 0, 0, X, Y);
   }
   resetMatrix();
   shape(menu.rect, 0, 0);
@@ -84,7 +82,7 @@ void tick() {
 } //tick
 
 void mouseDragged() {
-  if (!screen.equalsIgnoreCase("Keyboard")) {
+  if (screen.equalsIgnoreCase("Map")) {
     can.scroll();
   } else if ((int) pmouseX != (int) mouseX || (int) pmouseY != (int) mouseY) {
     mousePressed = false;
@@ -94,17 +92,6 @@ void mouseDragged() {
   coord[1] = mouseY - coords[1];
 } //mouseDragged
 
-/*void touchMoved() {
-  if (!screen.equalsIgnoreCase("Keyboard")) {
-    can.scroll();
-  } else if ((int) pmouseX != (int) mouseX || (int) pmouseY != (int) mouseY) {
-    mousePressed = false;
-  }
-  float[] coords = can.trns;
-  coord[0] = mouseX - coords[0];
-  coord[1] = mouseY - coords[1];
-} //touchMoved*/
-
 void mousePressed() {
   milli = millis();
   mousePressed = true;
@@ -112,17 +99,11 @@ void mousePressed() {
 
 void mouseReleased() {
   if (menu.clickedR(true) && millis() - milli < CLICK_SENSITIVITY) {
-    screen = screen.equalsIgnoreCase("Map") ? "Keyboard" : "Map";
+    screen = screen.equalsIgnoreCase("Map") ? "Menu" : "Map";
   }
-  if (screen.equalsIgnoreCase("Keyboard")) {
+  if (screen.equalsIgnoreCase("Ini")) {
     keyb.locked = false;
   }
-  /*if (coord[0] >= 0 && coord[0] <= mp.width * mp.unit && coord[1] >= 0 && coord[1] <= mp.height * mp.unit && abs(milli - millis()) <= CLICK_SENSITIVITY && pmouseX == mouseX && pmouseY == mouseY) {
-    Container cont = mp.at(coord);
-    if (cont.type == Container.Type.EMPTY) {
-      cont.is(player.city());
-    }
-  }*/
   mousePressed = false;
 } //mouseReleased
 
@@ -161,17 +142,27 @@ void load() {
   xml = loadXML("data.xml");
   for (XML kingdom : xml.getChildren()) {
     if (kingdom.getInt("id") == 0) {
-      player = new Kingdom(kingdom.getString("name")).on();
+      player = new Kingdom(kingdom.getString("name")).on(kingdom.getInt("x"), kingdom.getInt("y"));
     } else {
-      new Kingdom(kingdom.getString("name"));
+      new Kingdom(kingdom.getString("name")).on(kingdom.getInt("x"), kingdom.getInt("y"));
     }
   }
   println("Game loaded...");
 } //load
 
 void ini() {
-  player = new Kingdom("Ellestris").on();
-  //add setuping screen
+  screen = "Ini";
+  if (inistep == 0) {
+    keyb.runR("Empire Name:");
+    if (keyb.submit) {
+      player = new Kingdom(keyb.submit()).on().go();
+      inistep++;
+    }
+  } else {
+    //welcome!
+    screen = "Map";
+    save();
+  }
 } //ini
 
 void menu() {

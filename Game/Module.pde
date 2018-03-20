@@ -5,6 +5,8 @@ import android.app.*;
 import android.content.*;
 import android.os.*;
 
+final color RED = color(255, 0, 0), GREEN = color(0, 255, 0), BLUE = color(0, 0, 255);
+
 color rndRGB() {
   return color(int(round(random(255))), int(round(random(255))), int(round(random(255))));
 } //rndRGB

@@ -54,8 +54,9 @@ class Kingdom extends KingdomS {
     return this;
   } //on(x, y)
   
-  void go() {
+  Kingdom go() {
     capital.go();
+    return this;
   } //go
     
   void destroy() {
