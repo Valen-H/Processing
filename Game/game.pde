@@ -1,21 +1,19 @@
 //C,C3,K,K2,M = P
-
-import java.io.File;
-
 volatile float zoom = 2.0f, milli = 0.0f, counter = 0.0f;
 float[] coord = {0.0f, 0.0f};
 float X = width, Y = height;
 final int SIZE = 50;
 final float UNIT = 50 / zoom, OFFSET = 10.0f;
 final int CLICK_SENSITIVITY = 400;
-volatile String screen = "Map";
+volatile String screen = "Ini";
 int inistep = 0;
+final String packet = "processing.test.game";
 
 Canvas can;
 Map mp;
 Kingdom player;
 Keyboard keyb;
-ClickRegion menu;
+ClickRegion menu, load, start;
 XML xml;
 
 void settings() {
@@ -26,19 +24,18 @@ void setup() {
   X = width;
   Y = height;
   frameRate(120);
+  Dialog.milli = frameRate * 2;
   background(200);
-  textSize(30);
+  textSize(32);
   smooth();
   can = new Canvas(zoom, Canvas.Mode.CENTERED);
   can.submode.remove(Canvas.Submode.ZOOM);
   mp = new Map(SIZE, SIZE, UNIT * zoom);
-  keyb = new Keyboard(X / 2, Y / 2, X - OFFSET, Y / 3 + OFFSET, Keyboard.Alph.BASIC, 8, Keyboard.Mode.CENTERED, "");
+  keyb = new Keyboard(X / 2, Y / 2, X - OFFSET, Y / 3 + OFFSET, Keyboard.Alph.BASIC, 8, Keyboard.Mode.CENTERED);
+  keyb.capital = true;
   menu = new ClickRegion(0.0f, 0.0f, float(SIZE), float(SIZE));
-  if (!new File("data.xml").exists()) {
-    save();
-    ini();
-    load();
-  }
+  load = new ClickRegion(X / 2, Y / 2 - 100, X - 100, 100, ClickRegion.Subtype.CENTERED);
+  start = new ClickRegion(X / 2, Y / 2 + 100, X - 100, 100, ClickRegion.Subtype.CENTERED);
   stroke(180);
   fill(160);
   pushMatrix();
@@ -66,9 +63,13 @@ void tick() {
     can.scroll();
     mp.draw();
   } else if (screen.equalsIgnoreCase("Ini")) {
-    ini();
+    try {
+      ini();
+    } catch(Exception e) {
+      e.printStackTrace();
+    }
   } else {
-    text("Coming soon...", 0, 0, X, Y);
+    menu();
   }
   resetMatrix();
   shape(menu.rect, 0, 0);
@@ -78,6 +79,11 @@ void tick() {
   if (millis() - counter >= 5000) {
     Kingdom.tickAll();
     counter = millis();
+  }
+  try {
+    Dialog.renderRAll();
+  } catch (Exception e) {
+    e.printStackTrace();
   }
 } //tick
 
@@ -116,6 +122,8 @@ void save() {
     //child.setString("color", kingdom.color);
     child.setString("name", kingdom.name);
     child.setInt("id", counter++);
+    child.setInt("x", kingdom.capital.x);
+    child.setInt("y", kingdom.capital.x);
     int count = 0;
     for (Kingdom.Village village : kingdom.cities) {
       XML cchild = child.addChild("village");
@@ -139,12 +147,23 @@ void onBackPressed() {
 } //onBackPressed
 
 void load() {
-  xml = loadXML("data.xml");
+  try {
+    xml = loadXML("data.xml");
+  } catch(Exception e) {
+    inistep = 1;
+    return;
+  }
   for (XML kingdom : xml.getChildren()) {
-    if (kingdom.getInt("id") == 0) {
-      player = new Kingdom(kingdom.getString("name")).on(kingdom.getInt("x"), kingdom.getInt("y"));
-    } else {
-      new Kingdom(kingdom.getString("name")).on(kingdom.getInt("x"), kingdom.getInt("y"));
+    if (kingdom.getString("name") != null) {
+      Kingdom curr;
+      if (kingdom.getInt("id") == 0) {
+        curr = player = new Kingdom(kingdom.getString("name")).on(kingdom.getInt("x"), kingdom.getInt("y")).go();
+      } else {
+        curr = new Kingdom(kingdom.getString("name")).on(kingdom.getInt("x"), kingdom.getInt("y"));
+      }
+      for (XML village : kingdom.getChildren()) {
+        curr.new Village(curr, village.getString("name"));
+      }
     }
   }
   println("Game loaded...");
@@ -152,19 +171,34 @@ void load() {
 
 void ini() {
   screen = "Ini";
-  if (inistep == 0) {
+  if (inistep == 1) {
     keyb.runR("Empire Name:");
     if (keyb.submit) {
       player = new Kingdom(keyb.submit()).on().go();
-      inistep++;
+      inistep = 2;
     }
+  } else if (inistep == 0) {
+    startup();
   } else {
-    //welcome!
     screen = "Map";
+    new Dialog(frameRate * 2, 0.0f, 0.0f, X, Y, 0.0f, Y / (frameRate / 2)).text = "Welcome!";
     save();
   }
 } //ini
 
 void menu() {
-  //menu screen
+  text("Coming soon...", 0, 0, X, Y);
 } //menu
+
+void startup() {
+  shape(load.rect, 0, 0);
+  shape(start.rect, 0, 0);
+  text("Load", load.x, load.y, load.dx, load.dy);
+  text("Start", start.x, start.y, start.dx, start.dy);
+  if (load.clickedR()) {
+    load();
+    inistep = 2;
+  } else if (start.clickedR()) {
+    inistep = 1;
+  }
+} //startup

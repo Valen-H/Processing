@@ -13,19 +13,17 @@ class Keyboard extends KeyboardS {
   boolean capital = false,
   submit = false,
   locked = false,
-  capOnce = false, //N
-  blocked = false; //N
+  capOnce = KeyboardS.capOnce,
+  blocked = false;
   float cooldown = CLICK_SENSITIVITY,
   last = millis();
-  String reason = "Keyboard"; //N
   
   Keyboard(float x, float y, float dx, float dy, Alph alph) {
-    this(x, y, dx, dy, alph, 8, Mode.FREE, "Keyboard");
+    this(x, y, dx, dy, alph, 8, Mode.FREE);
   } //Keyboard(x, y, dx, dy)
-  Keyboard(float x, float y, float dx, float dy, Alph alph, int split, Mode mode, String reason) {
+  Keyboard(float x, float y, float dx, float dy, Alph alph, int split, Mode mode) {
     this.alph = alph;
     this.split = split;
-    this.reason = reason;
     this.dx = dx;
     this.dy = dy;
     this.mode = mode;
@@ -111,45 +109,49 @@ class Keyboard extends KeyboardS {
   } //clickedP
   
   String type() {
-    for (Piece piece : clickedP()) {
-      if ((millis() - last > cooldown || !locked) && mousePressed) {
-        if ((alph == Alph.BASIC && !piece.special) || alph != Alph.BASIC) {
-          typed += piece.chr();
-          if (capital && capOnce) {
-            capital = false;
+    if (!blocked) {
+      for (Piece piece : clickedP()) {
+        if ((millis() - last > cooldown || !locked) && mousePressed) {
+          if ((alph == Alph.BASIC && !piece.special) || alph != Alph.BASIC) {
+            typed += piece.chr();
+            if (capital && capOnce) {
+              capital = false;
+            }
+          } else if (piece.chr().equalsIgnoreCase("Del")) {
+            typed = join(shorten(splitAllS(typed)), "");
+          } else if (piece.chr().equalsIgnoreCase("Cap") && !locked) {
+            capital = !capital;
+          } else if (piece.chr().equalsIgnoreCase("End") && !locked) {
+            submit = true;
           }
-        } else if (piece.chr().equalsIgnoreCase("Del")) {
-          typed = join(shorten(splitAllS(typed)), "");
-        } else if (piece.chr().equalsIgnoreCase("Cap") && !locked) {
-          capital = !capital;
-        } else if (piece.chr().equalsIgnoreCase("End") && !locked) {
-          submit = true;
+          last = millis();
+          locked = true;
+        } else if (locked && !mousePressed) {
+          locked = false;
         }
-        last = millis();
-        locked = true;
-      } else if (locked && !mousePressed) {
-        locked = false;
       }
     }
     return typed;
   } //type
   
   String typeR() {
-    for (Piece piece : clickedRP()) {
-      if ((millis() - last > cooldown || !locked) && mousePressed) {
-        if ((alph == Alph.BASIC && !piece.special) || alph != Alph.BASIC) {
-          typed += piece.chr();
-        } else if (piece.chr().equalsIgnoreCase("Del")) {
-          typed = join(shorten(splitAllS(typed)), "");
-        } else if (piece.chr().equalsIgnoreCase("Cap") && !locked) {
-          capital = !capital;
-        } else if (piece.chr().equalsIgnoreCase("End") && !locked) {
-          submit = true;
+    if (!blocked) {
+      for (Piece piece : clickedRP()) {
+        if ((millis() - last > cooldown || !locked) && mousePressed) {
+          if ((alph == Alph.BASIC && !piece.special) || alph != Alph.BASIC) {
+            typed += piece.chr();
+          } else if (piece.chr().equalsIgnoreCase("Del")) {
+            typed = join(shorten(splitAllS(typed)), "");
+          } else if (piece.chr().equalsIgnoreCase("Cap") && !locked) {
+            capital = !capital;
+          } else if (piece.chr().equalsIgnoreCase("End") && !locked) {
+            submit = true;
+          }
+          last = millis();
+          locked = true;
+        } else if (locked && !mousePressed) {
+          locked = false;
         }
-        last = millis();
-        locked = true;
-      } else if (locked && !mousePressed) {
-        locked = false;
       }
     }
     return typed;
@@ -320,6 +322,8 @@ class Keyboard extends KeyboardS {
 } //Keyboard
 
 static abstract protected class KeyboardS extends Module {
+  
+  static volatile boolean capOnce = false;
   
   static enum Alph {
     

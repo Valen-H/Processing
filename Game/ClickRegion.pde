@@ -5,7 +5,8 @@ class ClickRegion extends ClickRegionS {
   PShape rect;
   transient final int id = clicks.size();
   volatile int zindex = 0;
-  Type type = ClickRegion.Type.RECT;
+  Type type = Type.RECT;
+  Subtype subtype = Subtype.NONE;
   volatile Mode mode = Mode.ACTIVE;
   volatile String discriminator = "c" + (id + 1);
   volatile ArrayList<ClickRegion> group = new ArrayList<ClickRegion>(0);
@@ -20,15 +21,23 @@ class ClickRegion extends ClickRegionS {
     this(x, y, dx, dy, mode, "Main");
   } //ClickRegion(x, y, dx, dy, mode)
   ClickRegion(float x, float y, float dx, float dy, String group) {
-    this(x, y, dx, dy, Mode.ACTIVE, group);
+    this(x, y, dx, dy, Mode.ACTIVE, group, Subtype.NONE);
   } //ClickRegion(x, y, dx, dy, group)
+  ClickRegion(float x, float y, float dx, float dy, String group, Subtype subtype) {
+    this(x, y, dx, dy, Mode.ACTIVE, group, subtype);
+  } //ClickRegion(x, y, dx, dy, group, subtype)
+  ClickRegion(float x, float y, float dx, float dy, Subtype subtype) {
+    this(x, y, dx, dy, Mode.ACTIVE, "Main", subtype);
+  } //ClickRegion(x, y, dx, dy, subtype)
   ClickRegion(float x, float y, float dx, float dy, Mode mode, String group) {
-    this.x = x;
-    this.y = y;
+    this(x, y, dx, dy, mode, group, Subtype.NONE);
+  } //ClickRegion(x, y, dx, dy, mode, group)
+  ClickRegion(float x, float y, float dx, float dy, Mode mode, String group, Subtype subtype) {
     this.dx = dx;
     this.dy = dy;
+    this.subtype = subtype;
     this.mode = mode;
-    rect = createShape(type == Type.RECT ? RECT : ELLIPSE, x, y, dx, dy);
+    rect = createShape(type == Type.RECT ? RECT : ELLIPSE, this.x = x - (subtype == Subtype.CENTERED ? dx / 2 : 0), this.y = y - (subtype == Subtype.CENTERED ? dy / 2 : 0), dx, dy);
     ClickRegion.clicks.add(this);
     if (ClickRegion.groups.isEmpty()) {
       ClickRegion.group("Main");
@@ -37,21 +46,29 @@ class ClickRegion extends ClickRegionS {
       ClickRegion.group(group);
     }
     groupname = group;
-    this.group = (ArrayList<ClickRegion>) ClickRegion.groups.get(group).clone();
-    ClickRegion.groups.get(group).add(this);
-  } //ClickRegion(x, y, dx, dy, mode, group)
+    this.group = groups.get(group);
+    zindex = this.group.size();
+    this.group.add(this);
+  } //ClickRegion(x, y, dx, dy, mode, group, subtype)
+  
+  ClickRegion resize(float x, float y, float dx, float dy) {
+    this.dx = dx;
+    this.dy = dy;
+    rect = createShape(type == Type.RECT ? RECT : ELLIPSE, this.x = x - (subtype == Subtype.CENTERED ? dx / 2 : 0), this.y = y - (subtype == Subtype.CENTERED ? dy / 2 : 0), dx, dy);
+    return this;
+  } //resize(x, y, dx, dy)
   
   boolean clicked() {
     return clicked(false);
   } //clicked
   boolean clicked(boolean stat) {
-    if ((mousePressed || stat) && type == Type.RECT && coord[0] >= x && coord[0] <= x + dx && coord[1] >= y && coord[1] <= y + dy) {
+    if ((mousePressed || stat) && ((type == Type.RECT && coord[0] >= x && coord[0] <= x + dx && coord[1] >= y && coord[1] <= y + dy) || (type == Type.CIRCULAR && dist(coord[0], coord[1], x, y) <= x))) {
       return clicked = true;
     }
     return clicked = false;
   } //clicked(stat)
   boolean clickedR(boolean stat) {
-    if ((mousePressed || stat) && type == Type.RECT && mouseX >= x && mouseX <= x + dx && mouseY >= y && mouseY <= y + dy) {
+    if ((mousePressed || stat) && ((type == Type.RECT && mouseX >= x && mouseX <= x + dx && mouseY >= y && mouseY <= y + dy) || (type == Type.CIRCULAR && dist(mouseX, mouseY, x, y) <= x))) {
       return clicked = true;
     }
     return clicked = false;
@@ -60,7 +77,7 @@ class ClickRegion extends ClickRegionS {
     return clickedR(false);
   } //clickedR
   boolean clickedL(boolean stat) {
-    if ((mousePressed || stat) && type == Type.RECT && coord[0] >= x && coord[0] <= x + dx && coord[1] >= y && coord[1] <= y + dy) {
+    if ((mousePressed || stat) && mode == ClickRegion.Mode.ACTIVE && type == Type.RECT && coord[0] >= x && coord[0] <= x + dx && coord[1] >= y && coord[1] <= y + dy) {
       return clicked = true;
     }
     return clicked = false;
@@ -69,7 +86,7 @@ class ClickRegion extends ClickRegionS {
     return clickedL(false);
   } //clickedL
   boolean clickedRL(boolean stat) {
-    if ((mousePressed || stat) && type == Type.RECT && mouseX >= x && mouseX <= x + dx && mouseY >= y && mouseY <= y + dy) {
+    if ((mousePressed || stat) && mode == ClickRegion.Mode.ACTIVE && type == Type.RECT && mouseX >= x && mouseX <= x + dx && mouseY >= y && mouseY <= y + dy) {
       return clicked = true;
     }
     return clicked = false;
@@ -207,16 +224,18 @@ static abstract protected class ClickRegionS extends Object {
     if (!ClickRegion.groups.containsKey(group)) {
       ClickRegion.groups.put(group, new ArrayList<ClickRegion>(0));
     }
-  } //new(group)
+  } //group(group)
   
   static enum Mode {
     ACTIVE, PASSIVE
   } //Mode
+  
+  static enum Subtype {
+    NONE, CENTERED
+  } //Subtype
   
   static enum Type {
     RECT, CIRCULAR
   } //Type
   
 } //ClickRegionS
-
-//ADD CIRCULAR!

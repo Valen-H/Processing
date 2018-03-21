@@ -65,13 +65,6 @@ static abstract class Module {
   
   static interface Animatable {
     
-    float x = 0.0f,
-    y = 0.0f,
-    z = 0.0f,
-    dx = 0.0f,
-    dy = 0.0f,
-    dz = 0.0f;
-    
     void tick();
     
   } //Animatable

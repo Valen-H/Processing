@@ -2,6 +2,7 @@
 class Kingdom extends KingdomS {
   
   Village capital;
+  private Kingdom king;
   final ArrayList<Kingdom> kingdomsS = Kingdom.kingdoms;
   final ArrayList<Village> cities = new ArrayList<Village>(0);
   String name = "Kingdom-" + (Kingdom.kingdoms.size() + 1);
@@ -25,6 +26,7 @@ class Kingdom extends KingdomS {
   
   private void ini() {
     Kingdom.kingdoms.add(this);
+    king = this;
   } //ini
   
   Village city() {
@@ -91,7 +93,7 @@ class Kingdom extends KingdomS {
       ini(owner);
     } //Village(owner)
     Village() {
-      
+      ini(king);
     } //Village()
     
     private void ini(Kingdom owner) {
