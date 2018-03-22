@@ -7,7 +7,7 @@ final float UNIT = 50 / zoom, OFFSET = 10.0f;
 final int CLICK_SENSITIVITY = 400;
 volatile String screen = "Ini";
 int inistep = 0;
-final String packet = "processing.test.game";
+final String packet = "processing.test.game"; //N
 
 Canvas can;
 Map mp;
@@ -117,13 +117,14 @@ void save() {
   xml = parseXML("<?xml version='1.0'?>\n<data>\n\t\n</data>");
   int counter = 0;
   for (Kingdom kingdom : Kingdom.kingdoms) {
+    if (kingdom.capital == null || kingdom.name == "") continue;
     XML child = xml.addChild("kingdom");
     //child.setContent(kingdom.name + "\n\t");
     //child.setString("color", kingdom.color);
     child.setString("name", kingdom.name);
     child.setInt("id", counter++);
     child.setInt("x", kingdom.capital.x);
-    child.setInt("y", kingdom.capital.x);
+    child.setInt("y", kingdom.capital.y);
     int count = 0;
     for (Kingdom.Village village : kingdom.cities) {
       XML cchild = child.addChild("village");
@@ -150,6 +151,7 @@ void load() {
   try {
     xml = loadXML("data.xml");
   } catch(Exception e) {
+    save();
     inistep = 1;
     return;
   }
@@ -157,12 +159,14 @@ void load() {
     if (kingdom.getString("name") != null) {
       Kingdom curr;
       if (kingdom.getInt("id") == 0) {
-        curr = player = new Kingdom(kingdom.getString("name")).on(kingdom.getInt("x"), kingdom.getInt("y")).go();
+        curr = player = new Kingdom(kingdom.getString("name"));
       } else {
-        curr = new Kingdom(kingdom.getString("name")).on(kingdom.getInt("x"), kingdom.getInt("y"));
+        curr = new Kingdom(kingdom.getString("name"));
       }
       for (XML village : kingdom.getChildren()) {
-        curr.new Village(curr, village.getString("name"));
+        Kingdom.Village vill = (curr.new Village(village.getString("name"))).on(village.getInt("x"), village.getInt("y"));
+        vill.population = village.getInt("population");
+        vill.wealth = village.getInt("wealth");
       }
     }
   }
@@ -173,7 +177,7 @@ void ini() {
   screen = "Ini";
   if (inistep == 1) {
     keyb.runR("Empire Name:");
-    if (keyb.submit) {
+    if (keyb.submit && keyb.typed.length() >= 1) {
       player = new Kingdom(keyb.submit()).on().go();
       inistep = 2;
     }
@@ -181,7 +185,7 @@ void ini() {
     startup();
   } else {
     screen = "Map";
-    new Dialog(frameRate * 2, 0.0f, 0.0f, X, Y, 0.0f, Y / (frameRate / 2)).text = "Welcome!";
+    new Dialog(frameRate / 2, 0.0f, 0.0f, X, Y, 0.0f, Y / (frameRate / 2)).text = "Welcome!";
     save();
   }
 } //ini
@@ -197,6 +201,11 @@ void startup() {
   text("Start", start.x, start.y, start.dx, start.dy);
   if (load.clickedR()) {
     load();
+    if (player != null) {
+      player.go();
+    } else {
+      inistep = 1;
+    }
     inistep = 2;
   } else if (start.clickedR()) {
     inistep = 1;

@@ -5,7 +5,7 @@ class Container extends ContainerS {
   Subtype subtype = Subtype.NULL;
   Kingdom.Village village;
   Kingdom kingdom;
-  int rnd = int(random(100)); //N
+  transient int rnd = int(random(100)); //N
   float x, y, dx, dy;
   
   Container is(Kingdom.Village village) {
